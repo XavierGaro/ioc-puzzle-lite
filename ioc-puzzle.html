@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>IOC Puzzle</title>
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<canvas id="game-canvas" width="576" height="576" class="fadeable">
+    El teu navegador no suporta canvas. Intenta-ho amb un altre navegador diferent.
+</canvas>
+
+<div class="score">SCORE: <span id="score"></span></div>
+<div class="messages fadeable" id="messages"></div>
+
+
+<script src="js/ioc-puzzle.js">
+</script>
+
+
+<script>
+    window.onload = function () {
+        var game = new IocPuzzle();
+        game.start();
+    }
+</script>
+
+</body>
+</html>
