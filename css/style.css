@@ -28,7 +28,12 @@ body {
     opacity: 0;
 }
 
-.game-over, .messages{
+#combo {
+    top: 200px;
+    color: white;
+}
+
+.game-over, .messages, .combo{
     position: absolute;
     top: 100px;
     left:0;
@@ -38,6 +43,7 @@ body {
     font-size: 40px;
     cursor:default;
     pointer-events: none;
+    width:auto;
 }
 
 
@@ -62,10 +68,28 @@ body {
 }
 
 .fadeable {
-
     -webkit-transition: opacity 3s ease-in-out;
     -moz-transition: opacity 3s ease-in-out;
     -ms-transition: opacity 3s ease-in-out;
     -o-transition: opacity 3s ease-in-out;
     opacity: 0;
+}
+
+#combo.fadeable {
+    -webkit-transition: opacity 0.75s, font-size 0.75s, -webkit-transform 0.75s ease-out;
+    transition: opacity 0.75s, font-size 0.75s, transform 0.75s ease-out;
+    opacity: 0;
+}
+
+.zoom {
+
+    /*-webkit-transition: width 2s, height 2s, -webkit-transform 2s; /!* Safari *!/*/
+    /*transition: width 2s, height 2s, transform 2s;*/
+    /*transform: rotate(360deg);*/
+    font-size: 100px;
+    /*height: 200%;*/
+    /*width:200%;*/
+
+    /*-webkit-transition: width 2s, height 4s; /!* Safari *!/*/
+    /*transition: width 2s, height 4s;*/
 }

@@ -174,12 +174,12 @@ var IocPuzzle = function () {
 // Classe per gestionar la interficie
 var UIManager = function (canvas, game) {
     this.scoreText = document.getElementById('score');
+    this.comboText = document.getElementById('combo');
     this.messageText = document.getElementById('messages');
     this.gameCanvas = canvas;
-    this.game = game;
 
     this.update = function () {
-        this.scoreText.innerHTML = this.game.score;
+        this.scoreText.innerHTML = "SCORE: <pan>" + game.currentScreen.score + "</span>";
     };
 
     this.showMessage = function (message, time) { // Temps en milisegons
@@ -191,8 +191,33 @@ var UIManager = function (canvas, game) {
         }.bind(this), time);
     };
 
-    this.hideMessage = function () {
-        this.fadeIn(this.messageText);
+    // TODO: Reproduir so
+    this.showCombo = function (number) { // Temps en milisegons
+        var message, cacheClass;
+
+        if (number < 4) {
+            message = "Molt be!";
+        } else if (number < 6) {
+            message = "Així es fa!";
+        } else if (number < 9) {
+            message = "Increïble!!";
+        } else if (number < 12) {
+            message = "Al·lucinnat!!";
+        } else {
+            message = "L'estàs petant!!!";
+        }
+
+        cacheClass = this.comboText.className.replace('zoom', '');
+
+        this.comboText.className += " zoom";
+        this.comboText.innerHTML = message;
+        this.fadeIn(this.comboText);
+        this.update();
+
+        setTimeout(function () {
+            this.fadeOut(this.comboText);
+            this.comboText.className = cacheClass;
+        }.bind(this), 750);
     };
 
     this.makeTransition = function (callback) {
@@ -210,6 +235,7 @@ var UIManager = function (canvas, game) {
 
     this.fadeOut = function (element) {
         element.style.opacity = 0;
+
     };
 
 };
@@ -249,6 +275,8 @@ var GameScreen = function (game) {
     this.game = game;
     this.fallingPieces = 0;
     this.dirty = [];
+    this.exploded = 0;
+    this.score = 0;
 
     this.update = function () {
 
@@ -256,11 +284,16 @@ var GameScreen = function (game) {
             return;
         }
 
+
+        this.checkScore();
+
+
         switch (this.state) {
             // TODO: Afegir un estat per discernir entre esperar selecció i esperar adjecent
             case this.states.WAITING_FOR_SELECTION:
                 this.updateWaitingSelection();
                 this.queued = [];
+                //alert("Waiting");
                 break;
 
             case this.states.MOVING_PIECES:
@@ -277,16 +310,25 @@ var GameScreen = function (game) {
         this.queued = [];
     };
 
-    this.updateWaitingSelection = function () {
+    this.checkScore = function () {
+        if (this.exploded > 0) {
+            this.game.uiManager.showCombo(this.exploded);
+            this.score += 100 * (Math.pow(this.exploded, 2));
+            this.exploded = 0;
+        }
 
+    };
+
+    this.updateWaitingSelection = function () {
         if (this.fallingPieces > 0) {
             this.state = this.states.FALLING_PIECES;
-
+            return;
         } else if (game.inputController.MOUSE_STATUS.button1) {
             this.toggleSelected();
-        } else if (game.inputController.KEY_STATUS.space) {
-            this.forceCheck();
         }
+        //else if (game.inputController.KEY_STATUS.space) {
+        //    this.forceCheck();
+        //}
     }
 
     this.updateMovingPieces = function () {
@@ -310,10 +352,11 @@ var GameScreen = function (game) {
             // Comprovem coincidencies
             this.queued = []; // No hi han de haver més en cua
             this.checkDirty();
-
+            //alert ("Exploded: " + this.exploded);
         }
     };
 
+    // TODO: Repassar quins dels que hi ha al principi poden eliminar-se per aquests
     this.start = function () {
         console.log("iniciant game screen");
         game.uiManager.fadeIn(game.uiManager.scoreText);
@@ -326,7 +369,7 @@ var GameScreen = function (game) {
         this.alive = true;
 
         this.queued = [];
-
+        this.exploded = 0;
 
 
         this.selected = null;
@@ -383,7 +426,7 @@ var GameScreen = function (game) {
                 || (clickedCoords.x === this.selected.x && clickedCoords.y === this.selected.y - 1)
                 || (clickedCoords.x === this.selected.x && clickedCoords.y === this.selected.y + 1)) {
 
-                console.log("es adjecent");
+                //console.log("es adjecent");
 
                 //// Intercanviem les posicions
                 //// TODO: fer el moviment real entre les peces
@@ -402,10 +445,10 @@ var GameScreen = function (game) {
                 var checked = this.checkBoard([selected, clicked]);
 
 
-                console.log("*****************************************");
+                //console.log("*****************************************");
                 if (checked.length > 0) {
 
-                    console.log("successes:", checked);
+                    //console.log("successes:", checked);
                     this.removeChecked(checked);
 
 
@@ -442,10 +485,10 @@ var GameScreen = function (game) {
                 //game.gameObjects[2].splice(index, 1);
 
 
-                console.log("no es adjecent");
+                //console.log("no es adjecent");
 
             }
-            console.log("***************************");
+            //console.log("***************************");
 
             //console.log("---------------------------------");
 
@@ -472,10 +515,14 @@ var GameScreen = function (game) {
 
             for (var x = checked[i].from.x; x <= checked[i].to.x; x++) {
                 for (var y = checked[i].from.y; y <= checked[i].to.y; y++) {
-                    this.board[x][y].explode();
+                    if (this.board[x][y]) {
+                        this.board[x][y].explode();
+                    }
                 }
             }
         }
+
+
     };
 
     this.switchPosition = function (item1, item2) {
@@ -549,11 +596,11 @@ var GameScreen = function (game) {
                 var maxLeft = this.searchItemInBoard(items[i].type, items[i].getGridCoords(), {x: -1, y: 0});
                 var maxRight = this.searchItemInBoard(items[i].type, items[i].getGridCoords(), {x: 1, y: 0});
 
-                console.log("Pel tipus ", items[i].type);
-                console.log("maxUp", maxUp);
-                console.log("maxDown", maxUp);
-                console.log("maxLeft", maxUp);
-                console.log("maxRight", maxUp);
+                //console.log("Pel tipus ", items[i].type);
+                //console.log("maxUp", maxUp);
+                //console.log("maxDown", maxUp);
+                //console.log("maxLeft", maxUp);
+                //console.log("maxRight", maxUp);
 
 
                 if (maxRight.x - maxLeft.x > 1) {
@@ -578,7 +625,7 @@ var GameScreen = function (game) {
         //console.log(this.board, position, direction);
 
         // TODO: Comprovar que no hi hagi un error off by 1
-        while (x + direction.x >= 0 && x + direction.x < 9 && y + direction.y >= 0 && y + direction.y <9) {
+        while (x + direction.x >= 0 && x + direction.x < 9 && y + direction.y >= 0 && y + direction.y < 9) {
             //console.log("Cercant:", type);
             //console.log("Al taulell a la posición: ", x+direction.x, y+direction.y)
             //    console.log( " hi ha: " , this.board[x + direction.x][y + direction.y].type);
@@ -587,11 +634,11 @@ var GameScreen = function (game) {
             //console.log(this.board[x+direction.x].length);
             candidate = this.board[x + direction.x][y + direction.y];
 
-            if ( candidate && candidate.type === type) {
+            if (candidate && candidate.type === type) {
                 x += direction.x;
                 y += direction.y;
             } else {
-                console.log ("El tipus trobat a ", x+direction.x, ", ", y+direction.y ," era de tipus ", candidate.type," i cerquem " , type)
+                //console.log ("El tipus trobat a ", x+direction.x, ", ", y+direction.y ," era de tipus ", candidate.type," i cerquem " , type)
                 return {x: x, y: y};
             }
         }
@@ -624,13 +671,13 @@ var GameScreen = function (game) {
         item.start(config);
 
         //console.log("**************** SPAWN ****************");
-    }
+    };
 
-    this.checkDirty= function() {
+    this.checkDirty = function () {
         var checked = this.checkBoard(this.dirty);
+        this.dirty = [];
         this.removeChecked(checked);
 
-        this.dirty=[];
     }
 
 
@@ -783,7 +830,7 @@ var PuzzleItem = function (type, board) {
 
         } else {
             //console.log("Caient");
-            this.y += 4; // TODO: Magic number, aquest nombre ha estat seleccionat arbitrariament, ha de ser divisor de 64
+            this.y += 6; // TODO: Magic number, aquest nombre ha estat seleccionat arbitrariament, ha de ser divisor de 64
         }
 
 
@@ -793,6 +840,8 @@ var PuzzleItem = function (type, board) {
         var pos = this.getGridCoords();
         //board.board[pos.x][pos.y].alive = false;
         this.alive = false;
+
+        board.exploded++;
 
         board.board[pos.x][pos.y] = null;
     };
@@ -836,16 +885,16 @@ var Selected = function (board) {
     this.start = function (config) {
         this.setCoords(config);
         this.alive = true;
-
-        try {
-            console.log("Seleccionada casella: ", this.x, this.y, " tipus: ", board.board[this.x][this.y].type);
-            console.log("Amunt: ", board.board[this.x][this.y-1].type)
-            console.log("Avall: ", board.board[this.x][this.y+1].type)
-            console.log("Esquerra: ", board.board[this.x-1][this.y].type)
-            console.log("Dreta: ", board.board[this.x+1][this.y].type)
-        } catch (e) {
-
-        }
+        //
+        //try {
+        //    console.log("Seleccionada casella: ", this.x, this.y, " tipus: ", board.board[this.x][this.y].type);
+        //    console.log("Amunt: ", board.board[this.x][this.y-1].type)
+        //    console.log("Avall: ", board.board[this.x][this.y+1].type)
+        //    console.log("Esquerra: ", board.board[this.x-1][this.y].type)
+        //    console.log("Dreta: ", board.board[this.x+1][this.y].type)
+        //} catch (e) {
+        //
+        //}
 
     };
 
