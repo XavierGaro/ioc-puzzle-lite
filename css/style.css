@@ -1,3 +1,6 @@
+* {
+    font-family: 'Alegreya', serif;
+}
 canvas {
     margin: 0 auto;
     /*background-color:pink;*/
@@ -13,8 +16,9 @@ canvas {
 
 body {
     text-align: center;
+
+    background: #aebf0e url("../img/background.png");
     background-size: cover;
-    background-image: url("../img/background.jpg");
 }
 
 #background {
@@ -27,7 +31,7 @@ body {
     left: 0;
     right: 0;
     color: lightgrey;
-    font-family: Helvetica, sans-serif;
+    /*font-family: Helvetica, sans-serif;*/
     font-size: 40px;
     pointer-events: none;
 
@@ -84,15 +88,15 @@ body {
 }
 
 #time {
-    padding-top:2px;
-    font-size: 40px;
+    font-size: 36px;
+    line-height:35px;
 }
 
 .ui-cell {
     font-size: 18px;
     width: 33.33333333%;
     color: white;
-    font-family: Helvetica, sans-serif;
+    /*font-family: Helvetica, sans-serif;*/
     cursor: default;
     float: left;
     line-height:40px;

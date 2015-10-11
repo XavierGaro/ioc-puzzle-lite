@@ -18,6 +18,8 @@ var IocPuzzle = function () {
 
     this.audioManager = new AudioManager();
 
+    this.downloadManager = new DownloadManager();
+
     // Funció amb autocrida
     this.inputController = (function () {
         // The keycodes that will be mapped when a user presses a button.
@@ -131,7 +133,6 @@ var IocPuzzle = function () {
         //console.log("Esborrant..");
 
 
-
         for (var layer = 0; layer < 3; layer++) {
             for (var i = 0; i < this.gameObjects[layer].length; i++) {
                 //console.log(this.gameObjects[layer][i]);
@@ -152,7 +153,7 @@ var IocPuzzle = function () {
         console.log("Start");
 
         this.audioManager.start();
-        this.loadScreen(new StartScreen(this));
+        this.loadScreen(new LoadingScreen(this));
 
         gameLoop();
     };
@@ -176,7 +177,7 @@ var IocPuzzle = function () {
     };
 
 
-    this.clearGameObjects = function() {
+    this.clearGameObjects = function () {
         this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
     }
 
@@ -192,7 +193,7 @@ var Timer = function () {
 
 // Classe per gestionar la interficie
 var UIManager = function (canvas, game) {
-    this.uiPanel =  document.getElementById('ui');
+    this.uiPanel = document.getElementById('ui');
     this.scoreText = document.getElementById('score');
     this.timeText = document.getElementById('time');
     this.recordText = document.getElementById('record');
@@ -226,15 +227,21 @@ var UIManager = function (canvas, game) {
 
         if (number < 4) {
             message = "Molt be!";
+            game.audioManager.getSound('combo1');
         } else if (number < 6) {
             message = "Així es fa!";
+            game.audioManager.getSound('combo2');
         } else if (number < 9) {
             message = "Increïble!!";
+            game.audioManager.getSound('combo3');
         } else if (number < 12) {
             message = "Al·lucinnat!!";
+            game.audioManager.getSound('combo4');
         } else {
             message = "L'estàs petant!!!";
+            game.audioManager.getSound('combo5');
         }
+
 
         cacheClass = this.comboText.className.replace('zoom', '');
 
@@ -270,6 +277,49 @@ var UIManager = function (canvas, game) {
 };
 
 
+var LoadingScreen = function (game) {
+    this.active = true;
+    this.game = game;
+
+    this.update = function () {
+
+        if (!this.active) {
+            return;
+        }
+
+        if (game.inputController.MOUSE_STATUS.button1 || game.inputController.KEY_STATUS.space) {
+            game.uiManager.showMessage("Imatges descarregades", 3000);
+            game.loadScreen(new StartScreen(game));
+            this.active = false;
+        }
+
+        //this.draw();
+    };
+
+
+
+    this.start = function () {
+        game.uiManager.fadeIn(game.gameCanvas);
+        console.log("iniciant loading screen");
+
+        game.downloadManager.queueDownload(IocPuzzle.prototype.imageRepository);
+        game.downloadManager.downloadAll(function() {
+            game.loadScreen(new StartScreen(game));
+            this.active = false;
+        }.bind(this));
+
+        //this.alive = true;
+    };
+
+    //this.draw = function () {
+    //    //console.log("Dibuixant a:", this.image);
+    //    game.gameContext.drawImage(this.image, 0, 0);
+    //
+    //    //console.log("Dibuixant a: ", thi s.x, this.y);
+    //};
+
+}
+
 var StartScreen = function (game) {
     this.active = true;
     this.game = game;
@@ -284,7 +334,6 @@ var StartScreen = function (game) {
             game.uiManager.showMessage("Començant el joc", 3000);
             game.loadScreen(new GameScreen(game));
             this.active = false;
-            this.alive = false;
         }
 
         this.draw();
@@ -297,6 +346,8 @@ var StartScreen = function (game) {
         game.clearGameObjects();
         this.game.audioManager.getMusic('main-theme');
 
+
+        this.image = game.downloadManager.getImage('game-start');
         //this.alive = true;
     };
 
@@ -344,6 +395,7 @@ var GameOverScreen = function (game) {
         //game.uiManager.fadeOut(game.uiManager.timeText);
         //game.uiManager.fadeIn(game.gameCanvas);
         game.clearGameObjects();
+        this.image = game.downloadManager.getImage('game-over');
         this.game.audioManager.getMusic('game-over');
 
     };
@@ -410,12 +462,12 @@ var GameScreen = function (game) {
 
     this.updateGameOver = function () {
 
-        if (this.score> game.record) {
-            game.uiManager.showMessage("Has aconseguit un nou record!<br><span>" + this.score+"</span>");
+        if (this.score > game.record) {
+            game.uiManager.showMessage("Has aconseguit un nou record!<br><span>" + this.score + "</span>");
             game.record = this.score;
         }
 
-        game.loadScreen(new GameOverScreen(game),true);
+        game.loadScreen(new GameOverScreen(game), true);
         game.uiManager.fadeOut(game.uiManager.uiPanel);
         this.active = false;
         this.alive = false;
@@ -775,7 +827,7 @@ GameScreen.prototype.states.GAME_OVER = 3;
 
 var PuzzleItem = function (type, board) {
     this.type = type;
-    this.image = this.imagesRepository[type];
+    //this.image = this.imagesRepository[type];
     this.x = 0;
     this.y = 0;
     this.state = this.states.DEFAULT;
@@ -815,6 +867,7 @@ var PuzzleItem = function (type, board) {
         this.y = config.y * 64;
         this.state = config.state ? config.state : this.states.DEFAULT;
         this.alive = true;
+        this.image = board.game.downloadManager.getImage('piece-'+this.type);
 
         //console.log("Afegida peça de tipus: ", type, this);
     };
@@ -939,20 +992,20 @@ PuzzleItem.prototype.states.DEFAULT = 0;
 PuzzleItem.prototype.states.EXPLODING = 1;
 PuzzleItem.prototype.states.FALLING = 2;
 
-PuzzleItem.prototype.TIME = 10; // Time per level
-
-PuzzleItem.prototype.imagesRepository = (function () {
-    var images = [], image;
-
-    for (var i = 0; i < 6; i++) {
-        image = new Image();
-        image.src = 'img/puzzle-piece-' + i + '.png';
-        //image.src = 'img/puzzle-piece-0.png';
-        images.push(image);
-    }
-
-    return images;
-})();
+PuzzleItem.prototype.TIME = 90; // Time per level
+//
+//PuzzleItem.prototype.imagesRepository = (function () {
+//    var images = [], image;
+//
+//    for (var i = 0; i < 6; i++) {
+//        image = new Image();
+//        image.src = 'img/puzzle-piece-' + i + '.png';
+//        //image.src = 'img/puzzle-piece-0.png';
+//        images.push(image);
+//    }
+//
+//    return images;
+//})();
 
 var Selected = function (board) {
     this.x = 0;
@@ -973,6 +1026,7 @@ var Selected = function (board) {
     this.start = function (config) {
         this.setCoords(config);
         this.alive = true;
+        this.image = board.game.downloadManager.getImage('selected');
         //
         //try {
         //    console.log("Seleccionada casella: ", this.x, this.y, " tipus: ", board.board[this.x][this.y].type);
@@ -1002,27 +1056,69 @@ var Selected = function (board) {
 };
 
 // TODO: el repositori d'imatges ha de trobar-se al prototip de IOC Puzzle i agafar totes les imatges des de allà
+//
+//Selected.prototype.image = (function () {
+//    var image = new Image();
+//    image.src = 'img/selected.png';
+//    return image;
+//})();
+//
+//
+//GameOverScreen.prototype.image = (function () {
+//    var image = new Image();
+//    image.src = 'img/game-over.png';
+//    return image;
+//})();
+//
+//StartScreen.prototype.image = (function () {
+//    var image = new Image();
+//    image.src = 'img/start-game.png';
+//    return image;
+//})();
 
-Selected.prototype.image = (function () {
-    var image = new Image();
-    image.src = 'img/selected.png';
-    return image;
-})();
+
+IocPuzzle.prototype.imageRepository = [
+    {
+        "id": "selected",
+        "path": "img/selected.png"
+    },
+    {
+        "id": "piece-0",
+        "path": "img/puzzle-piece-0.png"
+    },
+    {
+        "id": "piece-1",
+        "path": "img/puzzle-piece-1.png"
+    },
+    {
+        "id": "piece-2",
+        "path": "img/puzzle-piece-2.png"
+    },
+    {
+        "id": "piece-3",
+        "path": "img/puzzle-piece-3.png"
+    },
+    {
+        "id": "piece-4",
+        "path": "img/puzzle-piece-4.png"
+    },
+    {
+        "id": "piece-5",
+        "path": "img/puzzle-piece-5.png"
+    },
+    {
+        "id": "game-start",
+        "path": "img/start-game.png"
+    },
+    {
+        "id": "game-over",
+        "path": "img/game-over.png"
+    }
+
+];
 
 
-GameOverScreen.prototype.image = (function () {
-    var image = new Image();
-    image.src = 'img/game-over.png';
-    return image;
-})();
-
-StartScreen.prototype.image = (function () {
-    var image = new Image();
-    image.src = 'img/start-game.png';
-    return image;
-})();
-
-var AudioManager = function() {
+var AudioManager = function () {
     this.cache = {
         sounds: {},
         music: {}
@@ -1062,7 +1158,7 @@ var AudioManager = function() {
 
     };
 
-    this.start = function() {
+    this.start = function () {
         this.generateSound([
             {
                 "id": "pop",
@@ -1073,6 +1169,32 @@ var AudioManager = function() {
                 "id": "error",
                 "path": "audio/UI_Error_Zap_Reverse_stereo.mp3",
                 "volume": 0.5
+            },
+            {
+                "id": "combo1",
+                "path": "audio/combo-1.mp3",
+                "volume": 1
+            },
+            {
+                "id": "combo2",
+                "path": "audio/combo-2.mp3",
+                "volume": 1
+            },
+            {
+                "id": "combo3",
+                "path": "audio/combo-3.mp3",
+                "volume": 1
+            },
+            {
+                "id": "combo4",
+                "path": "audio/combo-4.mp3",
+                "volume": 1
+            },
+
+            {
+                "id": "combo5",
+                "path": "audio/combo-5.mp3",
+                "volume": 1
             }
         ]);
 
@@ -1114,7 +1236,7 @@ var AudioManager = function() {
             this.cache.sounds[soundsQueue[i].id] = {
                 currentSound: 0,
                 pool: pool,
-                volume: soundsQueue[i].volume,
+                volume: soundsQueue[i].volume
             }
 
         }
@@ -1132,5 +1254,65 @@ var AudioManager = function() {
             this.cache.music[musicQueue[i].id] = sound;
         }
     };
+
+};
+
+
+var DownloadManager = function () {
+    this.successCount = 0;
+    this.errorCount = 0;
+    this.downloadQueue = [];
+    this.cache = {
+        images: {}
+    };
+
+    this.queueDownload = function (imageData) {
+        console.log("imageData", imageData);
+        if (Array.isArray(imageData)) {
+            for (var i = 0; i < imageData.length; i++) {
+                this.downloadQueue.push(imageData[i]);
+            }
+        } else {
+            this.downloadQueue.push(imageData);
+        }
+
+    };
+
+    this.downloadAll = function (callback, args) {
+        console.log(this.downloadQueue);
+
+        // Primer descarreguem les imatges
+        for (var i = 0; i < this.downloadQueue.length; i++) {
+            var path = this.downloadQueue[i].path,
+                id = this.downloadQueue[i].id,
+                img = new Image();
+
+            img.addEventListener("load", function () {
+                this.successCount += 1;
+
+                if (this.isDone()) {
+                    callback(args);
+                }
+            }.bind(this), false);
+            img.addEventListener("error", function () {
+                this.errorCount += 1;
+
+                if (this.isDone()) {
+                    callback(args);
+                }
+            }.bind(this), false);
+
+            img.src = path;
+            this.cache.images[id] = img;
+
+            this.isDone = function () {
+                return (this.downloadQueue.length == this.successCount + this.errorCount);
+            };
+
+            this.getImage = function (id) {
+                return this.cache.images[id];
+            };
+        }
+    }
 
 };
