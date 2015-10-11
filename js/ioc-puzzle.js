@@ -1,3 +1,8 @@
+// Music: CC by Attribution
+//      playing: http://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400024
+//      main theme: http://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200107
+
+
 // Aquesta es la classe principal que encapsula el joc
 var IocPuzzle = function () {
 
@@ -9,6 +14,9 @@ var IocPuzzle = function () {
 
     this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
 
+    this.record = 0;
+
+    this.audioManager = new AudioManager();
 
     // Funció amb autocrida
     this.inputController = (function () {
@@ -117,9 +125,11 @@ var IocPuzzle = function () {
     var gameLoop = function () {
         window.requestAnimationFrame(gameLoop);
 
-        this.currentScreen.update();
-
         this.gameContext.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+
+        this.currentScreen.update();
+        //console.log("Esborrant..");
+
 
 
         for (var layer = 0; layer < 3; layer++) {
@@ -140,8 +150,10 @@ var IocPuzzle = function () {
 
     this.start = function () {
         console.log("Start");
+
+        this.audioManager.start();
         this.loadScreen(new StartScreen(this));
-        this.score = 0;
+
         gameLoop();
     };
 
@@ -152,8 +164,8 @@ var IocPuzzle = function () {
         if (transition) {
             // Iniciem transició
             this.uiManager.makeTransition(function () {
-
-            })
+                this.loadScreen(screen);
+            }.bind(this))
         } else {
             game.currentScreen = screen;
             screen.active = true;
@@ -164,22 +176,39 @@ var IocPuzzle = function () {
     };
 
 
-    this.restart = function () {
-        console.log("Restart");
+    this.clearGameObjects = function() {
+        this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
     }
 
+};
+
+var Timer = function () {
+    this.creationTime = Date.now();
+    this.getElapsedSeconds = function () {
+        return Math.round((Date.now() - this.creationTime) / 1000);
+    }
 };
 
 
 // Classe per gestionar la interficie
 var UIManager = function (canvas, game) {
+    this.uiPanel =  document.getElementById('ui');
     this.scoreText = document.getElementById('score');
+    this.timeText = document.getElementById('time');
+    this.recordText = document.getElementById('record');
     this.comboText = document.getElementById('combo');
     this.messageText = document.getElementById('messages');
     this.gameCanvas = canvas;
 
+
     this.update = function () {
         this.scoreText.innerHTML = "SCORE: <pan>" + game.currentScreen.score + "</span>";
+        this.recordText.innerHTML = "HI-SCORE: <pan>" + game.record + "</span>";
+
+        var time = Math.max(game.currentScreen.timer ? PuzzleItem.prototype.TIME - game.currentScreen.timer.getElapsedSeconds() : PuzzleItem.prototype.TIME, 0);
+
+        //this.timeText.innerHTML = "TIME: <pan>" + time + "</span>";
+        this.timeText.innerHTML = time;
     };
 
     this.showMessage = function (message, time) { // Temps en milisegons
@@ -226,7 +255,7 @@ var UIManager = function (canvas, game) {
         setTimeout(function () {
             this.fadeIn(this.gameCanvas);
             callback();
-        }.bind(this), 3000); // la transició dura 3s, la duració del efecte depèn del CSS
+        }.bind(this), 1000); // la transició dura 3s, la duració del efecte depèn del CSS
     };
 
     this.fadeIn = function (element) {
@@ -243,8 +272,10 @@ var UIManager = function (canvas, game) {
 
 var StartScreen = function (game) {
     this.active = true;
+    this.game = game;
 
     this.update = function () {
+
         if (!this.active) {
             return;
         }
@@ -255,14 +286,66 @@ var StartScreen = function (game) {
             this.active = false;
             this.alive = false;
         }
+
+        this.draw();
     };
 
     this.start = function () {
+        game.uiManager.fadeIn(game.gameCanvas);
+        console.log("iniciant start screen");
 
-        console.log("iniciant start screen")
+        game.clearGameObjects();
+        this.game.audioManager.getMusic('main-theme');
 
-        game.gameObjects = [[], [], []];
-        this.alive = true;
+        //this.alive = true;
+    };
+
+    this.draw = function () {
+        //console.log("Dibuixant a:", this.image);
+        game.gameContext.drawImage(this.image, 0, 0);
+
+        //console.log("Dibuixant a: ", thi s.x, this.y);
+    };
+
+};
+
+
+var GameOverScreen = function (game) {
+    this.active = true;
+    this.game = game;
+
+    this.update = function () {
+        if (!this.active) {
+            return;
+        }
+
+        // S'ha de fer click per tornar a començar
+        if (game.inputController.MOUSE_STATUS.button1 || game.inputController.KEY_STATUS.space) {
+            //game.uiManager.showMessage("Reiniciant el joc", 3000);
+            game.loadScreen(new StartScreen(game), true);
+            //this.active = false;
+            //this.alive = false;
+        }
+
+        this.draw();
+    };
+
+    this.draw = function () {
+        game.gameContext.drawImage(this.image, 0, 0);
+    };
+
+    this.start = function () {
+        console.log("iniciant Game Over screen");
+        //this.alive = true;
+
+
+        //game.uiManager.fadeOut(game.uiManager.scoreText);
+        //game.uiManager.fadeOut(game.uiManager.recordText);
+        //game.uiManager.fadeOut(game.uiManager.timeText);
+        //game.uiManager.fadeIn(game.gameCanvas);
+        game.clearGameObjects();
+        this.game.audioManager.getMusic('game-over');
+
     };
 
 };
@@ -277,6 +360,7 @@ var GameScreen = function (game) {
     this.dirty = [];
     this.exploded = 0;
     this.score = 0;
+    this.timer = null;
 
     this.update = function () {
 
@@ -286,6 +370,7 @@ var GameScreen = function (game) {
 
 
         this.checkScore();
+        game.uiManager.update();
 
 
         switch (this.state) {
@@ -303,6 +388,10 @@ var GameScreen = function (game) {
             case this.states.FALLING_PIECES:
                 this.updateFallingPieces();
                 break;
+
+            case this.states.GAME_OVER:
+                this.updateGameOver();
+                break;
         }
 
         // Buidem la cua de peces en espera de caure
@@ -319,17 +408,40 @@ var GameScreen = function (game) {
 
     };
 
+    this.updateGameOver = function () {
+
+        if (this.score> game.record) {
+            game.uiManager.showMessage("Has aconseguit un nou record!<br><span>" + this.score+"</span>");
+            game.record = this.score;
+        }
+
+        game.loadScreen(new GameOverScreen(game),true);
+        game.uiManager.fadeOut(game.uiManager.uiPanel);
+        this.active = false;
+        this.alive = false;
+
+
+    };
+
     this.updateWaitingSelection = function () {
         if (this.fallingPieces > 0) {
             this.state = this.states.FALLING_PIECES;
             return;
+        } else if (this.timer && this.timer.getElapsedSeconds() >= PuzzleItem.prototype.TIME) {
+            // S'ha acabat el joc
+            this.state = this.states.GAME_OVER;
+
+
         } else if (game.inputController.MOUSE_STATUS.button1) {
+
             this.toggleSelected();
         }
-        //else if (game.inputController.KEY_STATUS.space) {
-        //    this.forceCheck();
-        //}
-    }
+
+        // S'inicialitza el timer una vegada han acabat d'explotar les peces
+        if (!this.timer) {
+            this.timer = new Timer();
+        }
+    };
 
     this.updateMovingPieces = function () {
         // No fem res, només esperem que acabi el moviment
@@ -359,10 +471,13 @@ var GameScreen = function (game) {
     // TODO: Repassar quins dels que hi ha al principi poden eliminar-se per aquests
     this.start = function () {
         console.log("iniciant game screen");
-        game.uiManager.fadeIn(game.uiManager.scoreText);
+        //game.uiManager.fadeIn(game.uiManager.scoreText);
+        //game.uiManager.fadeIn(game.uiManager.recordText);
+        //game.uiManager.fadeIn(game.uiManager.timeText);
         game.uiManager.fadeIn(game.gameCanvas);
+        game.uiManager.fadeIn(game.uiManager.uiPanel);
 
-        game.gameObjects = [[], [], []];
+        game.clearGameObjects();
         this.board = [];
 
         this.state = this.states.WAITING_FOR_SELECTION;
@@ -375,39 +490,15 @@ var GameScreen = function (game) {
         this.selected = null;
 
         this.respawnBoard();
+
+        this.game.audioManager.getMusic('playing');
+
+        this.timer = null; // S'inicialitzarà una vegada acabin de caure les peces d'inici.
+
+
     };
 
     this.toggleSelected = function () {
-
-        /////////////////////////////////////////////////////
-        //for (var i=0; i<game.gameObjects[1].length; i++) {
-        //    var item = game.gameObjects[1][i];
-        //    if (item.getGridCoords()) {
-        //        var pos = item.getGridCoords();
-        //
-        //        if (pos.x <0 || pos.y<0) {
-        //            console.log(item.getGridCoords());
-        //
-        //            // Recorrem tota la graella cercant aquest item
-        //            for (var x=0; x<9;x++) {
-        //                for (var y=0; y<9; y++) {
-        //                    if (this.board[x][y] === item) {
-        //                        console.log("s'ha trobat a: ", x, y);
-        //                        alert("Trobat");
-        //                        break;
-        //                    }
-        //                }
-        //            }
-        //        }
-        //
-        //    }
-        //}
-        //
-        //alert("check");
-
-
-        //////////////////////////////////////////////
-
 
         var clickedCoords = this.canvasToGridCoords(game.inputController.MOUSE_LAST_POSITION),
             clicked, selected;
@@ -471,6 +562,7 @@ var GameScreen = function (game) {
                     //game.gameObjects[2].splice(index, 1);
 
 
+                    this.game.audioManager.getSound('error');
                     console.log("No hi ha cap coincidencia, revert");
                     this.switchPosition(clicked, selected);
                 }
@@ -572,14 +664,6 @@ var GameScreen = function (game) {
                 this.spawn(j);
             }
         }
-    };
-
-    // Comprova totes les casellas
-    this.forceCheck = function () {
-        console.log("FORCECHECK START");
-        console.log(this.game.gameObjects[1]);
-        this.checkBoard(this.game.gameObjects[1]); // En aquest layer només hi han les peces del puzzle
-        console.log("FORCECHECK END");
     };
 
 
@@ -685,9 +769,9 @@ var GameScreen = function (game) {
 
 GameScreen.prototype.states = {};
 GameScreen.prototype.states.WAITING_FOR_SELECTION = 0;
-GameScreen.prototype.states.WAITING_FOR_SELECTION = 0;
 GameScreen.prototype.states.MOVING_PIECES = 1;
 GameScreen.prototype.states.FALLING_PIECES = 2;
+GameScreen.prototype.states.GAME_OVER = 3;
 
 var PuzzleItem = function (type, board) {
     this.type = type;
@@ -844,6 +928,8 @@ var PuzzleItem = function (type, board) {
         board.exploded++;
 
         board.board[pos.x][pos.y] = null;
+
+        board.game.audioManager.getSound('pop');
     };
 
 };
@@ -852,6 +938,8 @@ PuzzleItem.prototype.states = {};
 PuzzleItem.prototype.states.DEFAULT = 0;
 PuzzleItem.prototype.states.EXPLODING = 1;
 PuzzleItem.prototype.states.FALLING = 2;
+
+PuzzleItem.prototype.TIME = 10; // Time per level
 
 PuzzleItem.prototype.imagesRepository = (function () {
     var images = [], image;
@@ -913,10 +1001,136 @@ var Selected = function (board) {
 
 };
 
-// TODO: al acabar refactoritzar si es possible, mateix codi a tots els gameobjects dibuixables
+// TODO: el repositori d'imatges ha de trobar-se al prototip de IOC Puzzle i agafar totes les imatges des de allà
 
 Selected.prototype.image = (function () {
     var image = new Image();
     image.src = 'img/selected.png';
     return image;
 })();
+
+
+GameOverScreen.prototype.image = (function () {
+    var image = new Image();
+    image.src = 'img/game-over.png';
+    return image;
+})();
+
+StartScreen.prototype.image = (function () {
+    var image = new Image();
+    image.src = 'img/start-game.png';
+    return image;
+})();
+
+var AudioManager = function() {
+    this.cache = {
+        sounds: {},
+        music: {}
+    };
+    this.currentSong = null;
+
+
+    this.getSound = function (id) {
+        var sounds = this.cache.sounds[id];
+
+        if (sounds.pool[sounds.currentSound].currentTime === 0
+            || sounds.pool[sounds.currentSound].ended) {
+            sounds.pool[sounds.currentSound].play();
+        }
+        sounds.currentSound = (sounds.currentSound + 1) % sounds.pool.length;
+    };
+
+    this.getMusic = function (id) {
+        this.resetMusic(this.currentSong);
+        this.cache.music[id].play();
+        this.currentSong = id;
+    };
+
+    this.resetMusic = function (id) {
+        if (!id) {
+            return;
+        }
+
+        if (!this.cache.music[id].ended) {
+            this.cache.music[id].pause();
+        }
+
+        if (this.cache.music[id].currentTime > 0) {
+            this.cache.music[id].currentTime = 0;
+        }
+
+
+    };
+
+    this.start = function() {
+        this.generateSound([
+            {
+                "id": "pop",
+                "path": "audio/POP_Mouth_mono.mp3",
+                "volume": 0.5
+            },
+            {
+                "id": "error",
+                "path": "audio/UI_Error_Zap_Reverse_stereo.mp3",
+                "volume": 0.5
+            }
+        ]);
+
+        this.generateMusic([
+            {
+                "id": "main-theme",
+                "path": "audio/Batty-McFaddin-slower.mp3",
+                "loop": true,
+                "volume": 1
+            },
+            {
+                "id": "playing",
+                "path": "audio/run-amok.mp3",
+                "loop": true,
+                "volume": 1
+            },
+            {
+                "id": "game-over",
+                "path": "audio/MUSIC_EFFECT_Piano_Negative_stereo.mp3",
+                "loop": false,
+                "volume": 1
+            }
+        ]);
+    };
+
+    // TODO: Privada
+    this.generateSound = function (soundsQueue) {
+        var pool, poolSize, sound;
+        for (var i = 0; i < soundsQueue.length; i++) {
+            pool = [];
+            poolSize = 10; // TODO nombre màxim de sons identics que es reprodueixen al mateix temps
+            for (var j = 0; j < poolSize; j++) {
+                //Initialize the sound
+                sound = new Audio(soundsQueue[i].path);
+                sound.volume = soundsQueue[i].volume;
+                sound.load(); // TODO això es necessari pels navegadorsm és antics, si funciona amb FF i Chrome ho esborremt
+                pool.push(sound);
+            }
+            this.cache.sounds[soundsQueue[i].id] = {
+                currentSound: 0,
+                pool: pool,
+                volume: soundsQueue[i].volume,
+            }
+
+        }
+    };
+
+    // TODO: Privada. La música es constant, no cal fer servir un pool
+    this.generateMusic = function (musicQueue) {
+        var sound;
+
+        for (var i = 0; i < musicQueue.length; i++) {
+            sound = new Audio(musicQueue[i].path);
+            sound.volume = musicQueue[i].volume;
+            sound.loop = musicQueue[i].loop;
+            sound.load(); // TODO això es necessari pels navegadorsm és antics, si funciona amb FF i Chrome ho esborremt
+            this.cache.music[musicQueue[i].id] = sound;
+        }
+    };
+
+};

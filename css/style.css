@@ -1,77 +1,63 @@
 canvas {
     margin: 0 auto;
-    /*background:transparent;*/
-    background-color:red;
+    /*background-color:pink;*/
     position: absolute;
-    top: 25px;
-    bottom:0;
+    top: 55px;
+    bottom: 0;
     left: 0;
     right: 0;
+    background: transparent url("../img/canvas-background.png") repeat;
+    border: 1px solid black;
+    border-radius: 5px;
 }
 
 body {
-    background-color: #000;
     text-align: center;
+    background-size: cover;
+    background-image: url("../img/background.jpg");
 }
 
 #background {
     z-index: -2;
 }
 
-.score {
+.messages, .combo {
     position: absolute;
-    top: 5px;
-    left:480px;
-    color: #FF7F00;
-    font-family: Helvetica, sans-serif;
-    cursor:default;
-    opacity: 0;
-}
-
-#combo {
-    top: 200px;
-    color: white;
-}
-
-.game-over, .messages, .combo{
-    position: absolute;
-    top: 100px;
-    left:0;
-    right:0;
-    color: #FF7F00;
+    top: 150px;
+    left: 0;
+    right: 0;
+    color: lightgrey;
     font-family: Helvetica, sans-serif;
     font-size: 40px;
-    cursor:default;
     pointer-events: none;
-    width:auto;
+
+    -webkit-text-stroke: 1px black;
+    /*color: white;*/
+    text-shadow: 3px 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
 
-
-.game-over span, .messages span{
-    font-size: 20px;
-    position: relative;
-
-}
-.game-over span {
-    cursor: pointer;
+.combo {
+    top: 280px;
+    color: yellow;
 }
 
-
-.game-over {
-    z-index: 100;
-    display: none;
-    cursor: default;
+.combo span {
+    color: darkred;
 }
 
-.game-over span:hover, .messages {
-    color: #FFD700;
+.messages span {
+    font-size: 80px;
+    color: darkred;
 }
 
 .fadeable {
-    -webkit-transition: opacity 3s ease-in-out;
-    -moz-transition: opacity 3s ease-in-out;
-    -ms-transition: opacity 3s ease-in-out;
-    -o-transition: opacity 3s ease-in-out;
+    -webkit-transition: opacity 1s ease-in-out;
+    -moz-transition: opacity 1s ease-in-out;
+    -o-transition: opacity 1s ease-in-out;
     opacity: 0;
 }
 
@@ -82,14 +68,41 @@ body {
 }
 
 .zoom {
-
-    /*-webkit-transition: width 2s, height 2s, -webkit-transform 2s; /!* Safari *!/*/
-    /*transition: width 2s, height 2s, transform 2s;*/
-    /*transform: rotate(360deg);*/
     font-size: 100px;
-    /*height: 200%;*/
-    /*width:200%;*/
 
-    /*-webkit-transition: width 2s, height 4s; /!* Safari *!/*/
-    /*transition: width 2s, height 4s;*/
+}
+
+#ui {
+    width: 576px;
+    margin: 0 auto;
+    border: 1px solid black;
+    border-radius: 5px;
+    height: 40px;
+
+    background: rgba(162, 207, 240, 0.75);
+    opacity: 0;
+}
+
+#time {
+    padding-top:2px;
+    font-size: 40px;
+}
+
+.ui-cell {
+    font-size: 18px;
+    width: 33.33333333%;
+    color: white;
+    font-family: Helvetica, sans-serif;
+    cursor: default;
+    float: left;
+    line-height:40px;
+
+    -webkit-text-stroke: 1px black;
+    text-shadow: -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+    /*color: white;*/
+
+
 }
