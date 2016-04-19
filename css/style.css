@@ -16,8 +16,8 @@ canvas {
 
 body {
     text-align: center;
-
-    background: #aebf0e url("../img/background.png");
+    background: url("../img/background.png") no-repeat center center fixed;
+    /*background: #aebf0e url("../img/background.png");*/
     background-size: cover;
 }
 

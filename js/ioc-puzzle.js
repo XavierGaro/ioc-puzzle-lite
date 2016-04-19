@@ -1,6 +1,6 @@
 // Music: CC by Attribution
-//      playing: http://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400024
-//      main theme: http://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200107
+//      playing: http://incompetech.com/music/royalty-free/?isrc=USUAN1400024
+//      main theme: http://incompetech.com/music/royalty-free/?isrc=USUAN1200107
 
 
 // Aquesta es la classe principal que encapsula el joc
@@ -150,7 +150,7 @@ var IocPuzzle = function () {
     }.bind(this);
 
     this.start = function () {
-        console.log("Start");
+        //console.log("Start");
 
         this.audioManager.start();
         this.loadScreen(new LoadingScreen(this));
@@ -287,20 +287,22 @@ var LoadingScreen = function (game) {
             return;
         }
 
-        if (game.inputController.MOUSE_STATUS.button1 || game.inputController.KEY_STATUS.space) {
-            game.uiManager.showMessage("Imatges descarregades", 3000);
-            game.loadScreen(new StartScreen(game));
-            this.active = false;
-        }
-
-        //this.draw();
+        this.draw();
     };
 
+    this.draw = function() {
+        game.gameContext.font = "48px sans-serif";
+        game.gameContext.textAlign = "center";
+        game.gameContext.textBaseline = "middle";
+
+        game.gameContext.fillText("LOADING...", game.gameCanvas.width/2, game.gameCanvas.height/2);
+
+    }
 
 
     this.start = function () {
         game.uiManager.fadeIn(game.gameCanvas);
-        console.log("iniciant loading screen");
+        //console.log("iniciant loading screen");
 
         game.downloadManager.queueDownload(IocPuzzle.prototype.imageRepository);
         game.downloadManager.downloadAll(function() {
@@ -341,7 +343,7 @@ var StartScreen = function (game) {
 
     this.start = function () {
         game.uiManager.fadeIn(game.gameCanvas);
-        console.log("iniciant start screen");
+        //console.log("iniciant start screen");
 
         game.clearGameObjects();
         this.game.audioManager.getMusic('main-theme');
@@ -522,7 +524,7 @@ var GameScreen = function (game) {
 
     // TODO: Repassar quins dels que hi ha al principi poden eliminar-se per aquests
     this.start = function () {
-        console.log("iniciant game screen");
+        //console.log("iniciant game screen");
         //game.uiManager.fadeIn(game.uiManager.scoreText);
         //game.uiManager.fadeIn(game.uiManager.recordText);
         //game.uiManager.fadeIn(game.uiManager.timeText);
@@ -1267,7 +1269,7 @@ var DownloadManager = function () {
     };
 
     this.queueDownload = function (imageData) {
-        console.log("imageData", imageData);
+        //console.log("imageData", imageData);
         if (Array.isArray(imageData)) {
             for (var i = 0; i < imageData.length; i++) {
                 this.downloadQueue.push(imageData[i]);
@@ -1279,7 +1281,7 @@ var DownloadManager = function () {
     };
 
     this.downloadAll = function (callback, args) {
-        console.log(this.downloadQueue);
+        //console.log(this.downloadQueue);
 
         // Primer descarreguem les imatges
         for (var i = 0; i < this.downloadQueue.length; i++) {
@@ -1304,15 +1306,19 @@ var DownloadManager = function () {
 
             img.src = path;
             this.cache.images[id] = img;
-
-            this.isDone = function () {
-                return (this.downloadQueue.length == this.successCount + this.errorCount);
-            };
-
-            this.getImage = function (id) {
-                return this.cache.images[id];
-            };
         }
-    }
+    };
+
+    this.isDone = function () {
+        return (this.downloadQueue.length == this.successCount + this.errorCount);
+    };
+
+    this.getImage = function (id) {
+        return this.cache.images[id];
+    };
 
 };
+
+
+
+
