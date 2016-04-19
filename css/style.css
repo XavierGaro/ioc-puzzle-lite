@@ -1,9 +1,9 @@
 * {
     font-family: 'Alegreya', serif;
 }
+
 canvas {
     margin: 0 auto;
-    /*background-color:pink;*/
     position: absolute;
     top: 55px;
     bottom: 0;
@@ -17,31 +17,35 @@ canvas {
 body {
     text-align: center;
     background: url("../assets/img/background.png") no-repeat center center fixed;
-    /*background: #aebf0e url("../img/background.png");*/
     background-size: cover;
 }
 
-#background {
-    z-index: -2;
+#ui {
+    width: 576px;
+    margin: 0 auto;
+    border: 1px solid black;
+    border-radius: 5px;
+    height: 40px;
+
+    background: rgba(162, 207, 240, 0.75);
+    opacity: 0;
 }
 
-.messages, .combo {
-    position: absolute;
-    top: 150px;
-    left: 0;
-    right: 0;
-    color: lightgrey;
-    /*font-family: Helvetica, sans-serif;*/
-    font-size: 40px;
-    pointer-events: none;
+#time {
+    font-size: 36px;
+    line-height: 35px;
+}
 
-    -webkit-text-stroke: 1px black;
-    /*color: white;*/
-    text-shadow: 3px 3px 0 #000,
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
+#combo.fadeable {
+    -webkit-transition: opacity 0.75s, font-size 0.75s, -webkit-transform 0.75s ease-out;
+    transition: opacity 0.75s, font-size 0.75s, transform 0.75s ease-out;
+    opacity: 0;
+}
+
+.fadeable {
+    -webkit-transition: opacity 1s ease-in-out;
+    transition: opacity 1s ease-in-out;
+    opacity: 0;
 }
 
 .combo {
@@ -58,17 +62,21 @@ body {
     color: darkred;
 }
 
-.fadeable {
-    -webkit-transition: opacity 1s ease-in-out;
-    -moz-transition: opacity 1s ease-in-out;
-    -o-transition: opacity 1s ease-in-out;
-    opacity: 0;
-}
+.messages, .combo {
+    position: absolute;
+    top: 150px;
+    left: 0;
+    right: 0;
+    color: lightgrey;
+    font-size: 40px;
+    pointer-events: none;
 
-#combo.fadeable {
-    -webkit-transition: opacity 0.75s, font-size 0.75s, -webkit-transform 0.75s ease-out;
-    transition: opacity 0.75s, font-size 0.75s, transform 0.75s ease-out;
-    opacity: 0;
+    -webkit-text-stroke: 1px black;
+    text-shadow: 3px 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
 
 .zoom {
@@ -76,37 +84,17 @@ body {
 
 }
 
-#ui {
-    width: 576px;
-    margin: 0 auto;
-    border: 1px solid black;
-    border-radius: 5px;
-    height: 40px;
-
-    background: rgba(162, 207, 240, 0.75);
-    opacity: 0;
-}
-
-#time {
-    font-size: 36px;
-    line-height:35px;
-}
-
 .ui-cell {
     font-size: 18px;
     width: 33.33333333%;
     color: white;
-    /*font-family: Helvetica, sans-serif;*/
     cursor: default;
     float: left;
-    line-height:40px;
+    line-height: 40px;
 
     -webkit-text-stroke: 1px black;
     text-shadow: -1px -1px 0 #000,
     1px -1px 0 #000,
     -1px 1px 0 #000,
     1px 1px 0 #000;
-    /*color: white;*/
-
-
 }

@@ -4,6 +4,7 @@ var Timer = function () {
         return Math.round((Date.now() - this.creationTime) / 1000);
     }
 };
+
 var AudioManager = function () {
     this.cache = {
         sounds: {},
@@ -142,6 +143,7 @@ var AudioManager = function () {
     };
 
 };
+
 var DownloadManager = function () {
     this.successCount = 0;
     this.errorCount = 0;
@@ -201,6 +203,7 @@ var DownloadManager = function () {
     };
 
 };
+
 var UIManager = function (canvas, game) {
     this.uiPanel = document.getElementById('ui');
     this.scoreText = document.getElementById('score');
@@ -329,6 +332,7 @@ var LoadingScreen = function (game) {
     //};
 
 }
+
 var StartScreen = function (game) {
     this.active = true;
     this.game = game;
@@ -368,6 +372,7 @@ var StartScreen = function (game) {
     };
 
 };
+
 var GameScreen = function (game) {
     this.active = true;
     this.gameContext = game.gameContext;
@@ -788,6 +793,7 @@ GameScreen.prototype.states.WAITING_FOR_SELECTION = 0;
 GameScreen.prototype.states.MOVING_PIECES = 1;
 GameScreen.prototype.states.FALLING_PIECES = 2;
 GameScreen.prototype.states.GAME_OVER = 3;
+
 var GameOverScreen = function (game) {
     this.active = true;
     this.game = game;
@@ -994,7 +1000,7 @@ PuzzleItem.prototype.states = {};
 PuzzleItem.prototype.states.DEFAULT = 0;
 PuzzleItem.prototype.states.EXPLODING = 1;
 PuzzleItem.prototype.states.FALLING = 2;
-PuzzleItem.prototype.TIME = 90; // Time per level
+PuzzleItem.prototype.TIME = 90;
 
 var Selected = function (board) {
     this.x = 0;
