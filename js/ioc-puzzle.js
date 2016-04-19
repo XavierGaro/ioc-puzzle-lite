@@ -1,197 +1,206 @@
-// Music: CC by Attribution
-//      playing: http://incompetech.com/music/royalty-free/?isrc=USUAN1400024
-//      main theme: http://incompetech.com/music/royalty-free/?isrc=USUAN1200107
-
-
-// Aquesta es la classe principal que encapsula el joc
-var IocPuzzle = function () {
-
-
-    this.gameCanvas = document.getElementById('game-canvas');
-    this.gameContext = this.gameCanvas.getContext("2d");
-
-    this.uiManager = new UIManager(this.gameCanvas, this);
-
-    this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
-
-    this.record = 0;
-
-    this.audioManager = new AudioManager();
-
-    this.downloadManager = new DownloadManager();
-
-    // Funció amb autocrida
-    this.inputController = (function () {
-        // The keycodes that will be mapped when a user presses a button.
-        // Original code by Doug McInnes
-        var KEY_CODES = {
-                32: 'space'
-            },
-
-            MOUSE_CODES = {
-                0: 'button1',
-                1: 'button2',
-                2: 'button3'
-            },
-
-        // Creates the array to hold the KEY_CODES and sets all their values
-        // to false. Checking true/flase is the quickest way to check status
-        // of a key press and which one was pressed when determining
-        // when to move and which direction.
-            KEY_STATUS = {},
-            MOUSE_STATUS = {},
-            MOUSE_LAST_POSITION = {x: 0, y: 0};
-
-
-        for (var code in KEY_CODES) {
-            KEY_STATUS[KEY_CODES[code]] = false;
-        }
-        /**
-         * Sets up the document to listen to onkeydown events (fired when
-         * any key on the keyboard is pressed down). When a key is pressed,
-         * it sets the appropriate direction to true to let us know which
-         * key it was.
-         */
-        document.onkeydown = function (e) {
-            // Firefox and opera use charCode instead of keyCode to
-            // return which key was pressed.
-            var keyCode = (e.keyCode) ? e.keyCode : e.charCode;
-            if (KEY_CODES[keyCode]) {
-                e.preventDefault();
-                KEY_STATUS[KEY_CODES[keyCode]] = true;
-            }
-        };
-        /**
-         * Sets up the document to listen to ownkeyup events (fired when
-         * any key on the keyboard is released). When a key is released,
-         * it sets teh appropriate direction to false to let us know which
-         * key it was.
-         */
-        document.onkeyup = function (e) {
-            var keyCode = (e.keyCode) ? e.keyCode : e.charCode;
-            if (KEY_CODES[keyCode]) {
-                e.preventDefault();
-                KEY_STATUS[KEY_CODES[keyCode]] = false;
-            }
-        };
-
-        document.onkeydown = function (e) {
-            // Firefox and opera use charCode instead of keyCode to
-            // return which key was pressed.
-            var keyCode = (e.keyCode) ? e.keyCode : e.charCode;
-            if (KEY_CODES[keyCode]) {
-                e.preventDefault();
-                KEY_STATUS[KEY_CODES[keyCode]] = true;
-            }
-        };
-
-        this.gameCanvas.onmousedown = function (e) {
-            MOUSE_STATUS[MOUSE_CODES[e.button]] = true;
-            MOUSE_LAST_POSITION.x = e.layerX;
-            MOUSE_LAST_POSITION.y = e.layerY;
-
-            e.preventDefault();
-
-            //console.log("MouseDown", MOUSE_LAST_POSITION, e.button);
-        };
-
-
-        this.gameCanvas.onmouseup = function (e) {
-            MOUSE_STATUS[MOUSE_CODES[e.button]] = false;
-            MOUSE_LAST_POSITION.x = e.layerX;
-            MOUSE_LAST_POSITION.y = e.layerY;
-            e.preventDefault();
-
-            //console.log("MouseUp", MOUSE_LAST_POSITION);
-        };
-
-        this.setMouseButtons = function () {
-
-        };
-
-        // Deshabilita el menú contextual del canvas
-        this.gameCanvas.oncontextmenu = function (e) {
-            e.preventDefault();
-            return false;
-        };
-
-        return {
-            KEY_CODES: KEY_CODES,
-            KEY_STATUS: KEY_STATUS,
-            MOUSE_STATUS: MOUSE_STATUS,
-            MOUSE_LAST_POSITION: MOUSE_LAST_POSITION
-
-        }
-    }).bind(this)();
-
-    var gameLoop = function () {
-        window.requestAnimationFrame(gameLoop);
-
-        this.gameContext.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
-
-        this.currentScreen.update();
-        //console.log("Esborrant..");
-
-
-        for (var layer = 0; layer < 3; layer++) {
-            for (var i = 0; i < this.gameObjects[layer].length; i++) {
-                //console.log(this.gameObjects[layer][i]);
-                if (this.gameObjects[layer][i].alive) {
-                    this.gameObjects[layer][i].update();
-                } else {
-                    //console.log("Esborrant del array BEFORE:", this.gameObjects[layer].length)
-                    this.gameObjects[layer].splice(i, 1);
-                    //console.log("Esborrant del array AFTER:", this.gameObjects[layer].length)
-                }
-
-            }
-        }
-
-    }.bind(this);
-
-    this.start = function () {
-        //console.log("Start");
-
-        this.audioManager.start();
-        this.loadScreen(new LoadingScreen(this));
-
-        gameLoop();
-    };
-
-
-    this.loadScreen = function (screen, transition) {
-        var game = this;
-
-        if (transition) {
-            // Iniciem transició
-            this.uiManager.makeTransition(function () {
-                this.loadScreen(screen);
-            }.bind(this))
-        } else {
-            game.currentScreen = screen;
-            screen.active = true;
-            screen.start();
-        }
-
-
-    };
-
-
-    this.clearGameObjects = function () {
-        this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
-    }
-
-};
-
 var Timer = function () {
     this.creationTime = Date.now();
     this.getElapsedSeconds = function () {
         return Math.round((Date.now() - this.creationTime) / 1000);
     }
 };
+var AudioManager = function () {
+    this.cache = {
+        sounds: {},
+        music: {}
+    };
+    this.currentSong = null;
 
 
-// Classe per gestionar la interficie
+    this.getSound = function (id) {
+        var sounds = this.cache.sounds[id];
+
+        if (sounds.pool[sounds.currentSound].currentTime === 0
+            || sounds.pool[sounds.currentSound].ended) {
+            sounds.pool[sounds.currentSound].play();
+        }
+        sounds.currentSound = (sounds.currentSound + 1) % sounds.pool.length;
+    };
+
+    this.getMusic = function (id) {
+        this.resetMusic(this.currentSong);
+        this.cache.music[id].play();
+        this.currentSong = id;
+    };
+
+    this.resetMusic = function (id) {
+        if (!id) {
+            return;
+        }
+
+        if (!this.cache.music[id].ended) {
+            this.cache.music[id].pause();
+        }
+
+        if (this.cache.music[id].currentTime > 0) {
+            this.cache.music[id].currentTime = 0;
+        }
+
+
+    };
+
+    this.start = function () {
+        this.generateSound([
+            {
+                "id": "pop",
+                "path": "POP_Mouth_mono.mp3",
+                "volume": 0.5
+            },
+            {
+                "id": "error",
+                "path": "UI_Error_Zap_Reverse_stereo.mp3",
+                "volume": 0.5
+            },
+            {
+                "id": "combo1",
+                "path": "combo-1.mp3",
+                "volume": 1
+            },
+            {
+                "id": "combo2",
+                "path": "combo-2.mp3",
+                "volume": 1
+            },
+            {
+                "id": "combo3",
+                "path": "combo-3.mp3",
+                "volume": 1
+            },
+            {
+                "id": "combo4",
+                "path": "combo-4.mp3",
+                "volume": 1
+            },
+
+            {
+                "id": "combo5",
+                "path": "combo-5.mp3",
+                "volume": 1
+            }
+        ]);
+
+        this.generateMusic([
+            {
+                "id": "main-theme",
+                "path": "Batty-McFaddin-slower.mp3",
+                "loop": true,
+                "volume": 1
+            },
+            {
+                "id": "playing",
+                "path": "run-amok.mp3",
+                "loop": true,
+                "volume": 1
+            },
+            {
+                "id": "game-over",
+                "path": "MUSIC_EFFECT_Piano_Negative_stereo.mp3",
+                "loop": false,
+                "volume": 1
+            }
+        ]);
+    };
+
+    // TODO: Privada
+    this.generateSound = function (soundsQueue) {
+        var pool, poolSize, sound, root = 'assets/audio/';
+        for (var i = 0; i < soundsQueue.length; i++) {
+            pool = [];
+            poolSize = 10; // TODO nombre màxim de sons identics que es reprodueixen al mateix temps
+            for (var j = 0; j < poolSize; j++) {
+                //Initialize the sound
+                sound = new Audio(root + soundsQueue[i].path);
+                sound.volume = soundsQueue[i].volume;
+                sound.load(); // TODO això es necessari pels navegadorsm és antics, si funciona amb FF i Chrome ho esborremt
+                pool.push(sound);
+            }
+            this.cache.sounds[soundsQueue[i].id] = {
+                currentSound: 0,
+                pool: pool,
+                volume: soundsQueue[i].volume
+            }
+
+        }
+    };
+
+    // TODO: Privada. La música es constant, no cal fer servir un pool
+    this.generateMusic = function (musicQueue) {
+        var sound, root = 'assets/audio/';
+
+        for (var i = 0; i < musicQueue.length; i++) {
+            sound = new Audio(root + musicQueue[i].path);
+            sound.volume = musicQueue[i].volume;
+            sound.loop = musicQueue[i].loop;
+            sound.load(); // TODO això es necessari pels navegadors és antics, si funciona amb FF i Chrome ho esborremt
+            this.cache.music[musicQueue[i].id] = sound;
+        }
+    };
+
+};
+var DownloadManager = function () {
+    this.successCount = 0;
+    this.errorCount = 0;
+    this.downloadQueue = [];
+    this.cache = {
+        images: {}
+    };
+
+    this.queueDownload = function (imageData) {
+        //console.log("imageData", imageData);
+        if (Array.isArray(imageData)) {
+            for (var i = 0; i < imageData.length; i++) {
+                this.downloadQueue.push(imageData[i]);
+            }
+        } else {
+            this.downloadQueue.push(imageData);
+        }
+
+    };
+
+    this.downloadAll = function (callback, args) {
+        var root = 'assets/img/';
+        //console.log(this.downloadQueue);
+
+        // Primer descarreguem les imatges
+        for (var i = 0; i < this.downloadQueue.length; i++) {
+            var path = this.downloadQueue[i].path,
+                id = this.downloadQueue[i].id,
+                img = new Image();
+
+            img.addEventListener("load", function () {
+                this.successCount += 1;
+
+                if (this.isDone()) {
+                    callback(args);
+                }
+            }.bind(this), false);
+            img.addEventListener("error", function () {
+                this.errorCount += 1;
+
+                if (this.isDone()) {
+                    callback(args);
+                }
+            }.bind(this), false);
+
+            img.src = root + path;
+            this.cache.images[id] = img;
+        }
+    };
+
+    this.isDone = function () {
+        return (this.downloadQueue.length == this.successCount + this.errorCount);
+    };
+
+    this.getImage = function (id) {
+        return this.cache.images[id];
+    };
+
+};
 var UIManager = function (canvas, game) {
     this.uiPanel = document.getElementById('ui');
     this.scoreText = document.getElementById('score');
@@ -276,7 +285,6 @@ var UIManager = function (canvas, game) {
 
 };
 
-
 var LoadingScreen = function (game) {
     this.active = true;
     this.game = game;
@@ -321,7 +329,6 @@ var LoadingScreen = function (game) {
     //};
 
 }
-
 var StartScreen = function (game) {
     this.active = true;
     this.game = game;
@@ -361,50 +368,6 @@ var StartScreen = function (game) {
     };
 
 };
-
-
-var GameOverScreen = function (game) {
-    this.active = true;
-    this.game = game;
-
-    this.update = function () {
-        if (!this.active) {
-            return;
-        }
-
-        // S'ha de fer click per tornar a començar
-        if (game.inputController.MOUSE_STATUS.button1 || game.inputController.KEY_STATUS.space) {
-            //game.uiManager.showMessage("Reiniciant el joc", 3000);
-            game.loadScreen(new StartScreen(game), true);
-            //this.active = false;
-            //this.alive = false;
-        }
-
-        this.draw();
-    };
-
-    this.draw = function () {
-        game.gameContext.drawImage(this.image, 0, 0);
-    };
-
-    this.start = function () {
-        console.log("iniciant Game Over screen");
-        //this.alive = true;
-
-
-        //game.uiManager.fadeOut(game.uiManager.scoreText);
-        //game.uiManager.fadeOut(game.uiManager.recordText);
-        //game.uiManager.fadeOut(game.uiManager.timeText);
-        //game.uiManager.fadeIn(game.gameCanvas);
-        game.clearGameObjects();
-        this.image = game.downloadManager.getImage('game-over');
-        this.game.audioManager.getMusic('game-over');
-
-    };
-
-};
-
-
 var GameScreen = function (game) {
     this.active = true;
     this.gameContext = game.gameContext;
@@ -820,12 +783,51 @@ var GameScreen = function (game) {
 
 
 };
-
 GameScreen.prototype.states = {};
 GameScreen.prototype.states.WAITING_FOR_SELECTION = 0;
 GameScreen.prototype.states.MOVING_PIECES = 1;
 GameScreen.prototype.states.FALLING_PIECES = 2;
 GameScreen.prototype.states.GAME_OVER = 3;
+var GameOverScreen = function (game) {
+    this.active = true;
+    this.game = game;
+
+    this.update = function () {
+        if (!this.active) {
+            return;
+        }
+
+        // S'ha de fer click per tornar a començar
+        if (game.inputController.MOUSE_STATUS.button1 || game.inputController.KEY_STATUS.space) {
+            //game.uiManager.showMessage("Reiniciant el joc", 3000);
+            game.loadScreen(new StartScreen(game), true);
+            //this.active = false;
+            //this.alive = false;
+        }
+
+        this.draw();
+    };
+
+    this.draw = function () {
+        game.gameContext.drawImage(this.image, 0, 0);
+    };
+
+    this.start = function () {
+        console.log("iniciant Game Over screen");
+        //this.alive = true;
+
+
+        //game.uiManager.fadeOut(game.uiManager.scoreText);
+        //game.uiManager.fadeOut(game.uiManager.recordText);
+        //game.uiManager.fadeOut(game.uiManager.timeText);
+        //game.uiManager.fadeIn(game.gameCanvas);
+        game.clearGameObjects();
+        this.image = game.downloadManager.getImage('game-over');
+        this.game.audioManager.getMusic('game-over');
+
+    };
+
+};
 
 var PuzzleItem = function (type, board) {
     this.type = type;
@@ -988,26 +990,11 @@ var PuzzleItem = function (type, board) {
     };
 
 };
-
 PuzzleItem.prototype.states = {};
 PuzzleItem.prototype.states.DEFAULT = 0;
 PuzzleItem.prototype.states.EXPLODING = 1;
 PuzzleItem.prototype.states.FALLING = 2;
-
 PuzzleItem.prototype.TIME = 90; // Time per level
-//
-//PuzzleItem.prototype.imagesRepository = (function () {
-//    var images = [], image;
-//
-//    for (var i = 0; i < 6; i++) {
-//        image = new Image();
-//        image.src = 'img/puzzle-piece-' + i + '.png';
-//        //image.src = 'img/puzzle-piece-0.png';
-//        images.push(image);
-//    }
-//
-//    return images;
-//})();
 
 var Selected = function (board) {
     this.x = 0;
@@ -1029,16 +1016,6 @@ var Selected = function (board) {
         this.setCoords(config);
         this.alive = true;
         this.image = board.game.downloadManager.getImage('selected');
-        //
-        //try {
-        //    console.log("Seleccionada casella: ", this.x, this.y, " tipus: ", board.board[this.x][this.y].type);
-        //    console.log("Amunt: ", board.board[this.x][this.y-1].type)
-        //    console.log("Avall: ", board.board[this.x][this.y+1].type)
-        //    console.log("Esquerra: ", board.board[this.x-1][this.y].type)
-        //    console.log("Dreta: ", board.board[this.x+1][this.y].type)
-        //} catch (e) {
-        //
-        //}
 
     };
 
@@ -1057,28 +1034,183 @@ var Selected = function (board) {
 
 };
 
-// TODO: el repositori d'imatges ha de trobar-se al prototip de IOC Puzzle i agafar totes les imatges des de allà
-//
-//Selected.prototype.image = (function () {
-//    var image = new Image();
-//    image.src = 'img/selected.png';
-//    return image;
-//})();
-//
-//
-//GameOverScreen.prototype.image = (function () {
-//    var image = new Image();
-//    image.src = 'img/game-over.png';
-//    return image;
-//})();
-//
-//StartScreen.prototype.image = (function () {
-//    var image = new Image();
-//    image.src = 'img/start-game.png';
-//    return image;
-//})();
+var IocPuzzle = function () {
+
+    this.gameCanvas = document.getElementById('game-canvas');
+    this.gameContext = this.gameCanvas.getContext("2d");
+
+    this.uiManager = new UIManager(this.gameCanvas, this);
+
+    this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
+
+    this.record = 0;
+
+    this.audioManager = new AudioManager();
+
+    this.downloadManager = new DownloadManager();
+
+    // Funció amb autocrida
+    this.inputController = (function () {
+        // The keycodes that will be mapped when a user presses a button.
+        // Original code by Doug McInnes
+        var KEY_CODES = {
+                32: 'space'
+            },
+
+            MOUSE_CODES = {
+                0: 'button1',
+                1: 'button2',
+                2: 'button3'
+            },
+
+        // Creates the array to hold the KEY_CODES and sets all their values
+        // to false. Checking true/flase is the quickest way to check status
+        // of a key press and which one was pressed when determining
+        // when to move and which direction.
+            KEY_STATUS = {},
+            MOUSE_STATUS = {},
+            MOUSE_LAST_POSITION = {x: 0, y: 0};
 
 
+        for (var code in KEY_CODES) {
+            KEY_STATUS[KEY_CODES[code]] = false;
+        }
+        /**
+         * Sets up the document to listen to onkeydown events (fired when
+         * any key on the keyboard is pressed down). When a key is pressed,
+         * it sets the appropriate direction to true to let us know which
+         * key it was.
+         */
+        document.onkeydown = function (e) {
+            // Firefox and opera use charCode instead of keyCode to
+            // return which key was pressed.
+            var keyCode = (e.keyCode) ? e.keyCode : e.charCode;
+            if (KEY_CODES[keyCode]) {
+                e.preventDefault();
+                KEY_STATUS[KEY_CODES[keyCode]] = true;
+            }
+        };
+        /**
+         * Sets up the document to listen to ownkeyup events (fired when
+         * any key on the keyboard is released). When a key is released,
+         * it sets teh appropriate direction to false to let us know which
+         * key it was.
+         */
+        document.onkeyup = function (e) {
+            var keyCode = (e.keyCode) ? e.keyCode : e.charCode;
+            if (KEY_CODES[keyCode]) {
+                e.preventDefault();
+                KEY_STATUS[KEY_CODES[keyCode]] = false;
+            }
+        };
+
+        document.onkeydown = function (e) {
+            // Firefox and opera use charCode instead of keyCode to
+            // return which key was pressed.
+            var keyCode = (e.keyCode) ? e.keyCode : e.charCode;
+            if (KEY_CODES[keyCode]) {
+                e.preventDefault();
+                KEY_STATUS[KEY_CODES[keyCode]] = true;
+            }
+        };
+
+        this.gameCanvas.onmousedown = function (e) {
+            MOUSE_STATUS[MOUSE_CODES[e.button]] = true;
+            MOUSE_LAST_POSITION.x = e.layerX;
+            MOUSE_LAST_POSITION.y = e.layerY;
+
+            e.preventDefault();
+
+            //console.log("MouseDown", MOUSE_LAST_POSITION, e.button);
+        };
+
+
+        this.gameCanvas.onmouseup = function (e) {
+            MOUSE_STATUS[MOUSE_CODES[e.button]] = false;
+            MOUSE_LAST_POSITION.x = e.layerX;
+            MOUSE_LAST_POSITION.y = e.layerY;
+            e.preventDefault();
+
+            //console.log("MouseUp", MOUSE_LAST_POSITION);
+        };
+
+        this.setMouseButtons = function () {
+
+        };
+
+        // Deshabilita el menú contextual del canvas
+        this.gameCanvas.oncontextmenu = function (e) {
+            e.preventDefault();
+            return false;
+        };
+
+        return {
+            KEY_CODES: KEY_CODES,
+            KEY_STATUS: KEY_STATUS,
+            MOUSE_STATUS: MOUSE_STATUS,
+            MOUSE_LAST_POSITION: MOUSE_LAST_POSITION
+
+        }
+    }).bind(this)();
+
+    var gameLoop = function () {
+        window.requestAnimationFrame(gameLoop);
+
+        this.gameContext.clearRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+
+        this.currentScreen.update();
+        //console.log("Esborrant..");
+
+
+        for (var layer = 0; layer < 3; layer++) {
+            for (var i = 0; i < this.gameObjects[layer].length; i++) {
+                //console.log(this.gameObjects[layer][i]);
+                if (this.gameObjects[layer][i].alive) {
+                    this.gameObjects[layer][i].update();
+                } else {
+                    //console.log("Esborrant del array BEFORE:", this.gameObjects[layer].length)
+                    this.gameObjects[layer].splice(i, 1);
+                    //console.log("Esborrant del array AFTER:", this.gameObjects[layer].length)
+                }
+
+            }
+        }
+
+    }.bind(this);
+
+    this.start = function () {
+        //console.log("Start");
+
+        this.audioManager.start();
+        this.loadScreen(new LoadingScreen(this));
+
+        gameLoop();
+    };
+
+
+    this.loadScreen = function (screen, transition) {
+        var game = this;
+
+        if (transition) {
+            // Iniciem transició
+            this.uiManager.makeTransition(function () {
+                this.loadScreen(screen);
+            }.bind(this))
+        } else {
+            game.currentScreen = screen;
+            screen.active = true;
+            screen.start();
+        }
+
+
+    };
+
+
+    this.clearGameObjects = function () {
+        this.gameObjects = [[], [], []]; // Cada array correspon a una capa, sent 0 la primera en dibuixarse i 2 la última
+    }
+
+};
 IocPuzzle.prototype.imageRepository = [
     {
         "id": "selected",
@@ -1118,208 +1250,5 @@ IocPuzzle.prototype.imageRepository = [
     }
 
 ];
-
-
-var AudioManager = function () {
-    this.cache = {
-        sounds: {},
-        music: {}
-    };
-    this.currentSong = null;
-
-
-    this.getSound = function (id) {
-        var sounds = this.cache.sounds[id];
-
-        if (sounds.pool[sounds.currentSound].currentTime === 0
-            || sounds.pool[sounds.currentSound].ended) {
-            sounds.pool[sounds.currentSound].play();
-        }
-        sounds.currentSound = (sounds.currentSound + 1) % sounds.pool.length;
-    };
-
-    this.getMusic = function (id) {
-        this.resetMusic(this.currentSong);
-        this.cache.music[id].play();
-        this.currentSong = id;
-    };
-
-    this.resetMusic = function (id) {
-        if (!id) {
-            return;
-        }
-
-        if (!this.cache.music[id].ended) {
-            this.cache.music[id].pause();
-        }
-
-        if (this.cache.music[id].currentTime > 0) {
-            this.cache.music[id].currentTime = 0;
-        }
-
-
-    };
-
-    this.start = function () {
-        this.generateSound([
-            {
-                "id": "pop",
-                "path": "POP_Mouth_mono.mp3",
-                "volume": 0.5
-            },
-            {
-                "id": "error",
-                "path": "UI_Error_Zap_Reverse_stereo.mp3",
-                "volume": 0.5
-            },
-            {
-                "id": "combo1",
-                "path": "combo-1.mp3",
-                "volume": 1
-            },
-            {
-                "id": "combo2",
-                "path": "combo-2.mp3",
-                "volume": 1
-            },
-            {
-                "id": "combo3",
-                "path": "combo-3.mp3",
-                "volume": 1
-            },
-            {
-                "id": "combo4",
-                "path": "combo-4.mp3",
-                "volume": 1
-            },
-
-            {
-                "id": "combo5",
-                "path": "combo-5.mp3",
-                "volume": 1
-            }
-        ]);
-
-        this.generateMusic([
-            {
-                "id": "main-theme",
-                "path": "Batty-McFaddin-slower.mp3",
-                "loop": true,
-                "volume": 1
-            },
-            {
-                "id": "playing",
-                "path": "run-amok.mp3",
-                "loop": true,
-                "volume": 1
-            },
-            {
-                "id": "game-over",
-                "path": "MUSIC_EFFECT_Piano_Negative_stereo.mp3",
-                "loop": false,
-                "volume": 1
-            }
-        ]);
-    };
-
-    // TODO: Privada
-    this.generateSound = function (soundsQueue) {
-        var pool, poolSize, sound, root = 'assets/audio/';
-        for (var i = 0; i < soundsQueue.length; i++) {
-            pool = [];
-            poolSize = 10; // TODO nombre màxim de sons identics que es reprodueixen al mateix temps
-            for (var j = 0; j < poolSize; j++) {
-                //Initialize the sound
-                sound = new Audio(root + soundsQueue[i].path);
-                sound.volume = soundsQueue[i].volume;
-                sound.load(); // TODO això es necessari pels navegadorsm és antics, si funciona amb FF i Chrome ho esborremt
-                pool.push(sound);
-            }
-            this.cache.sounds[soundsQueue[i].id] = {
-                currentSound: 0,
-                pool: pool,
-                volume: soundsQueue[i].volume
-            }
-
-        }
-    };
-
-    // TODO: Privada. La música es constant, no cal fer servir un pool
-    this.generateMusic = function (musicQueue) {
-        var sound, root = 'assets/audio/';
-
-        for (var i = 0; i < musicQueue.length; i++) {
-            sound = new Audio(root + musicQueue[i].path);
-            sound.volume = musicQueue[i].volume;
-            sound.loop = musicQueue[i].loop;
-            sound.load(); // TODO això es necessari pels navegadors és antics, si funciona amb FF i Chrome ho esborremt
-            this.cache.music[musicQueue[i].id] = sound;
-        }
-    };
-
-};
-
-
-var DownloadManager = function () {
-    this.successCount = 0;
-    this.errorCount = 0;
-    this.downloadQueue = [];
-    this.cache = {
-        images: {}
-    };
-
-    this.queueDownload = function (imageData) {
-        //console.log("imageData", imageData);
-        if (Array.isArray(imageData)) {
-            for (var i = 0; i < imageData.length; i++) {
-                this.downloadQueue.push(imageData[i]);
-            }
-        } else {
-            this.downloadQueue.push(imageData);
-        }
-
-    };
-
-    this.downloadAll = function (callback, args) {
-        var root = 'assets/img/';
-        //console.log(this.downloadQueue);
-
-        // Primer descarreguem les imatges
-        for (var i = 0; i < this.downloadQueue.length; i++) {
-            var path = this.downloadQueue[i].path,
-                id = this.downloadQueue[i].id,
-                img = new Image();
-
-            img.addEventListener("load", function () {
-                this.successCount += 1;
-
-                if (this.isDone()) {
-                    callback(args);
-                }
-            }.bind(this), false);
-            img.addEventListener("error", function () {
-                this.errorCount += 1;
-
-                if (this.isDone()) {
-                    callback(args);
-                }
-            }.bind(this), false);
-
-            img.src = root + path;
-            this.cache.images[id] = img;
-        }
-    };
-
-    this.isDone = function () {
-        return (this.downloadQueue.length == this.successCount + this.errorCount);
-    };
-
-    this.getImage = function (id) {
-        return this.cache.images[id];
-    };
-
-};
-
-
 
 
