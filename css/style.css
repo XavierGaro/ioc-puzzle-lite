@@ -9,14 +9,14 @@ canvas {
     bottom: 0;
     left: 0;
     right: 0;
-    background: transparent url("../img/canvas-background.png") repeat;
+    background: transparent url("../assets/img/canvas-background.png") repeat;
     border: 1px solid black;
     border-radius: 5px;
 }
 
 body {
     text-align: center;
-    background: url("../img/background.png") no-repeat center center fixed;
+    background: url("../assets/img/background.png") no-repeat center center fixed;
     /*background: #aebf0e url("../img/background.png");*/
     background-size: cover;
 }

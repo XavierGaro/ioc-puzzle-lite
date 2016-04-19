@@ -1082,39 +1082,39 @@ var Selected = function (board) {
 IocPuzzle.prototype.imageRepository = [
     {
         "id": "selected",
-        "path": "img/selected.png"
+        "path": "selected.png"
     },
     {
         "id": "piece-0",
-        "path": "img/puzzle-piece-0.png"
+        "path": "puzzle-piece-0.png"
     },
     {
         "id": "piece-1",
-        "path": "img/puzzle-piece-1.png"
+        "path": "puzzle-piece-1.png"
     },
     {
         "id": "piece-2",
-        "path": "img/puzzle-piece-2.png"
+        "path": "puzzle-piece-2.png"
     },
     {
         "id": "piece-3",
-        "path": "img/puzzle-piece-3.png"
+        "path": "puzzle-piece-3.png"
     },
     {
         "id": "piece-4",
-        "path": "img/puzzle-piece-4.png"
+        "path": "puzzle-piece-4.png"
     },
     {
         "id": "piece-5",
-        "path": "img/puzzle-piece-5.png"
+        "path": "puzzle-piece-5.png"
     },
     {
         "id": "game-start",
-        "path": "img/start-game.png"
+        "path": "start-game.png"
     },
     {
         "id": "game-over",
-        "path": "img/game-over.png"
+        "path": "game-over.png"
     }
 
 ];
@@ -1164,38 +1164,38 @@ var AudioManager = function () {
         this.generateSound([
             {
                 "id": "pop",
-                "path": "audio/POP_Mouth_mono.mp3",
+                "path": "POP_Mouth_mono.mp3",
                 "volume": 0.5
             },
             {
                 "id": "error",
-                "path": "audio/UI_Error_Zap_Reverse_stereo.mp3",
+                "path": "UI_Error_Zap_Reverse_stereo.mp3",
                 "volume": 0.5
             },
             {
                 "id": "combo1",
-                "path": "audio/combo-1.mp3",
+                "path": "combo-1.mp3",
                 "volume": 1
             },
             {
                 "id": "combo2",
-                "path": "audio/combo-2.mp3",
+                "path": "combo-2.mp3",
                 "volume": 1
             },
             {
                 "id": "combo3",
-                "path": "audio/combo-3.mp3",
+                "path": "combo-3.mp3",
                 "volume": 1
             },
             {
                 "id": "combo4",
-                "path": "audio/combo-4.mp3",
+                "path": "combo-4.mp3",
                 "volume": 1
             },
 
             {
                 "id": "combo5",
-                "path": "audio/combo-5.mp3",
+                "path": "combo-5.mp3",
                 "volume": 1
             }
         ]);
@@ -1203,19 +1203,19 @@ var AudioManager = function () {
         this.generateMusic([
             {
                 "id": "main-theme",
-                "path": "audio/Batty-McFaddin-slower.mp3",
+                "path": "Batty-McFaddin-slower.mp3",
                 "loop": true,
                 "volume": 1
             },
             {
                 "id": "playing",
-                "path": "audio/run-amok.mp3",
+                "path": "run-amok.mp3",
                 "loop": true,
                 "volume": 1
             },
             {
                 "id": "game-over",
-                "path": "audio/MUSIC_EFFECT_Piano_Negative_stereo.mp3",
+                "path": "MUSIC_EFFECT_Piano_Negative_stereo.mp3",
                 "loop": false,
                 "volume": 1
             }
@@ -1224,13 +1224,13 @@ var AudioManager = function () {
 
     // TODO: Privada
     this.generateSound = function (soundsQueue) {
-        var pool, poolSize, sound;
+        var pool, poolSize, sound, root = 'assets/audio/';
         for (var i = 0; i < soundsQueue.length; i++) {
             pool = [];
             poolSize = 10; // TODO nombre màxim de sons identics que es reprodueixen al mateix temps
             for (var j = 0; j < poolSize; j++) {
                 //Initialize the sound
-                sound = new Audio(soundsQueue[i].path);
+                sound = new Audio(root + soundsQueue[i].path);
                 sound.volume = soundsQueue[i].volume;
                 sound.load(); // TODO això es necessari pels navegadorsm és antics, si funciona amb FF i Chrome ho esborremt
                 pool.push(sound);
@@ -1246,13 +1246,13 @@ var AudioManager = function () {
 
     // TODO: Privada. La música es constant, no cal fer servir un pool
     this.generateMusic = function (musicQueue) {
-        var sound;
+        var sound, root = 'assets/audio/';
 
         for (var i = 0; i < musicQueue.length; i++) {
-            sound = new Audio(musicQueue[i].path);
+            sound = new Audio(root + musicQueue[i].path);
             sound.volume = musicQueue[i].volume;
             sound.loop = musicQueue[i].loop;
-            sound.load(); // TODO això es necessari pels navegadorsm és antics, si funciona amb FF i Chrome ho esborremt
+            sound.load(); // TODO això es necessari pels navegadors és antics, si funciona amb FF i Chrome ho esborremt
             this.cache.music[musicQueue[i].id] = sound;
         }
     };
@@ -1281,6 +1281,7 @@ var DownloadManager = function () {
     };
 
     this.downloadAll = function (callback, args) {
+        var root = 'assets/img/';
         //console.log(this.downloadQueue);
 
         // Primer descarreguem les imatges
@@ -1304,7 +1305,7 @@ var DownloadManager = function () {
                 }
             }.bind(this), false);
 
-            img.src = path;
+            img.src = root + path;
             this.cache.images[id] = img;
         }
     };
