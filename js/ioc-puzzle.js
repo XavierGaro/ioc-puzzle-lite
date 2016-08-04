@@ -301,37 +301,28 @@ var LoadingScreen = function (game) {
         this.draw();
     };
 
-    this.draw = function() {
+    this.draw = function () {
         game.gameContext.font = "48px sans-serif";
         game.gameContext.textAlign = "center";
         game.gameContext.textBaseline = "middle";
 
-        game.gameContext.fillText("LOADING...", game.gameCanvas.width/2, game.gameCanvas.height/2);
+        game.gameContext.fillText("Carregant...", game.gameCanvas.width / 2, game.gameCanvas.height / 2);
 
-    }
+    };
 
 
     this.start = function () {
         game.uiManager.fadeIn(game.gameCanvas);
-        //console.log("iniciant loading screen");
 
         game.downloadManager.queueDownload(IocPuzzle.prototype.imageRepository);
-        game.downloadManager.downloadAll(function() {
+        game.downloadManager.downloadAll(function () {
             game.loadScreen(new StartScreen(game));
             this.active = false;
         }.bind(this));
 
-        //this.alive = true;
     };
 
-    //this.draw = function () {
-    //    //console.log("Dibuixant a:", this.image);
-    //    game.gameContext.drawImage(this.image, 0, 0);
-    //
-    //    //console.log("Dibuixant a: ", thi s.x, this.y);
-    //};
-
-}
+};
 
 var StartScreen = function (game) {
     this.active = true;
@@ -877,7 +868,7 @@ var PuzzleItem = function (type, board) {
         this.y = config.y * 64;
         this.state = config.state ? config.state : this.states.DEFAULT;
         this.alive = true;
-        this.image = board.game.downloadManager.getImage('piece-'+this.type);
+        this.image = board.game.downloadManager.getImage('piece-' + this.type);
 
         //console.log("Afegida peça de tipus: ", type, this);
     };
@@ -1069,10 +1060,10 @@ var IocPuzzle = function () {
                 2: 'button3'
             },
 
-        // Creates the array to hold the KEY_CODES and sets all their values
-        // to false. Checking true/flase is the quickest way to check status
-        // of a key press and which one was pressed when determining
-        // when to move and which direction.
+            // Creates the array to hold the KEY_CODES and sets all their values
+            // to false. Checking true/flase is the quickest way to check status
+            // of a key press and which one was pressed when determining
+            // when to move and which direction.
             KEY_STATUS = {},
             MOUSE_STATUS = {},
             MOUSE_LAST_POSITION = {x: 0, y: 0};
